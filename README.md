@@ -12,6 +12,7 @@ It's a common storage manager. It can adapt to kinds of storage, and manage the 
 - Runtime caching to reduce read pressure on Storage
 - Master the information of the stored data
 - Simultaneous support for synchronous and asynchronous writing
+- Compatible with other apis that are not used by the storage
 
 ### Usage
 
@@ -45,7 +46,9 @@ const userInfo = {
  * UserInfo is stored in runtime as:
  * {
  *   key: 'userInfo',
- *   value: "{"name":"Jack"}",
+ *   value: {
+ *     name: 'Jack'
+ *   },
  *   type: 'Object'
  * }
  * Persistent store is:
@@ -65,16 +68,6 @@ const storage = window.storage;
 const userInfo = storage.getItemSync('userInfo');
 // Async method
 storage.getItem('userInfo').then(userInfo => {});
-```
-
-#### Update storage item:
-
-```javascript
-const storage = window.storage;
-// Sync method
-const [result, err] = storage.updateItemSync('userInfo');
-// Async method
-storage.updateItem('userInfo').then(result => {}).catch(() => {});
 ```
 
 #### Remove storage item:
@@ -105,5 +98,55 @@ const result = storage.getInfoSync('userInfo');
 // Async method
 storage.getInfo().then(result => {});
 ```
+#### Use storage adapter
+Storage adapter's target is override storage's native method, and all configurations are optional.
 
+```javascript
+const Storage = require('pstorage');
+const storage = new Storage({
+  target: localStorage,
+  keys: ['userInfo']
+});
+const getItemAsync = function(getItem) {
+  return function(key, callback, fallback, completeback) {
+    getItem(key)
+    callback();
+    complete();
+  }
+}
+const setItemAsync = function(setItem) {
+  return function(key, data, callback, fallback, completeback) {
+    setItem(key, data)
+    callback();
+    complete();
+  }
+}
+storage.useAdapter({
+  getItem: getItemAsync(localStorage.getItem),
+  setItem: setItemAsync(localStorage.setItem),
+  getItemSync: localStorage.getItem,
+  setItemSync: localStorage.setItem
+});
+```
+The official storage already supported in the web container are: `localStorage`, `sessionStorage`;
+Supported in the miniprogram container: weChat miniprogram, ali miniprogram, toutiao miniprogram;
+Supported in the React-Native container: `AsyncStorage`
 
+### Compatible with other apis that are not used by the cache
+Just like React-Native:
+
+```javascript
+import { AsyncStorage } from 'react-native';
+import Storage from 'pstorage';
+
+const storage = new Storage({
+  target: AsyncStorage,
+  keys: ['userInfo']
+});
+
+storage.getAllKeys((err, keys) => {
+  if (!err) {
+    console.log(keys);
+  }
+});
+```
