@@ -1,4 +1,5 @@
 ## pstorage
+
 [English](./README.md) | 简体中文
 
 ### pstorage 是什么 ?
@@ -6,6 +7,7 @@
 这是一个通用的缓存管理方案. 可以适配多种缓存器, 并且能够合理的管理需要存储的数据.
 
 ### pstorage 的特点
+
 - 支持多端缓存器适配
 - 统一的存储数据管理
 - 运行时缓存，减小对 Storage 的读取压力
@@ -25,13 +27,11 @@ const storage = new Storage({
 });
 // 设置为全局变量
 // 浏览器
-window.storage = storage
+window.storage = storage;
 // 微信小程序的 app.js
 App({
-  ...
-  storage,
+  ...storage
 });
-
 ```
 
 #### 存储初始 storage item:
@@ -39,24 +39,29 @@ App({
 ```javascript
 const storage = window.storage;
 const userInfo = {
-	name: 'Jack'
+  name: 'Jack'
 };
 /**
  * 用户信息在运行时的存储格式为：
  * {
- *   key: 'userInfo',
  *   value: {
  *     name: 'Jack'
- *   },
- *   type: 'Object'
+ *   }
  * }
  * 持久性缓存的格式为：
- * "{"key":"userInfo","value":{"name":"Jack"},"type":"Object"}"
+ * '{"value": "{"name":"Jack"}"}'
  */
-// 同步存储, 返回是否存储成功
-const [result, err] = storage.setItemSync('userInfo', userInfo);
+// 同步存储, 返回 undefined
+try {
+  storage.setItemSync('userInfo', userInfo);
+} catch (err) {
+  console.log(err);
+}
 // 异步存储，返回一个 promise
-storage.setItem('userInfo', userInfo).then(result => {}).catch(err => {});
+storage
+  .setItem('userInfo', userInfo)
+  .then(() => {})
+  .catch(err => {});
 ```
 
 #### 获取 storage item:
@@ -64,7 +69,11 @@ storage.setItem('userInfo', userInfo).then(result => {}).catch(err => {});
 ```javascript
 const storage = window.storage;
 // 同步方法
-const userInfo = storage.getItemSync('userInfo');
+try {
+  const userInfo = storage.getItemSync('userInfo');
+} catch (err) {
+  console.log(err);
+}
 // 异步方法
 storage.getItem('userInfo').then(userInfo => {});
 ```
@@ -74,9 +83,13 @@ storage.getItem('userInfo').then(userInfo => {});
 ```javascript
 const storage = window.storage;
 // 同步方法
-const result = storage.removeSync('userInfo');
+try {
+  storage.removeSync('userInfo');
+} catch (err) {
+  console.log(err);
+}
 // 异步方法
-storage.remove('userInfo').then(result => {});
+storage.remove('userInfo').then(() => {});
 ```
 
 #### 清除所有存储的数据
@@ -84,9 +97,13 @@ storage.remove('userInfo').then(result => {});
 ```javascript
 const storage = window.storage;
 // 同步方法
-const result = storage.clearSync('userInfo');
+try {
+  storage.clearSync('userInfo');
+} catch (err) {
+  console.log(err);
+}
 // 异步方法
-storage.clear('userInfo').then(result => {});
+storage.clear('userInfo').then(() => {});
 ```
 
 #### 获取当前的缓存信息
@@ -94,45 +111,67 @@ storage.clear('userInfo').then(result => {});
 ```javascript
 const storage = window.storage;
 // 同步方法
-const result = storage.getInfoSync('userInfo');
+try {
+  const result = storage.getInfoSync();
+} catch (err) {
+  console.log(err);
+}
 // 异步方法
 storage.getInfo().then(result => {});
 ```
+
+| 属性        | 类型           | 说明                        |
+| ----------- | -------------- | --------------------------- |
+| keys        | Array.<string> | 当前 storage 中所有的 key   |
+| currentSize | number         | 当前占用的空间大小, 单位 KB |
+| limitSize   | number         | 限制的空间大小，单位 KB     |
+
+**注意**：
+
+由于容器之间的差别，只有小程序平台才会返回有效的 `limitSize`。
+
 #### 使用 storage 适配器
+
 storage 适配器是用来选择性重写缓存器的原生方法，具体使用方法如下：
 
 ```javascript
 const Storage = require('pstorage');
+
+const getItemAsync = function(getItem) {
+  return function(key, callback, fallback) {
+    try {
+      const value = getItem(key);
+      callback(value);
+    } catch (err) {
+      fallback(err);
+    }
+  };
+};
+const setItemAsync = function(setItem) {
+  return function(key, data, callback, fallback) {
+    setItem(key, data);
+    callback();
+  };
+};
+
 const storage = new Storage({
   target: localStorage,
-  keys: ['userInfo']
-});
-const getItemAsync = function(getItem) {
-  return function(key, callback, fallback, completeback) {
-    getItem(key)
-    callback();
-    complete();
+  keys: ['userInfo'],
+  adapters: {
+    getItem: getItemAsync(localStorage.getItem),
+    setItem: setItemAsync(localStorage.setItem),
+    getItemSync: localStorage.getItem,
+    setItemSync: localStorage.setItem
   }
-}
-const setItemAsync = function(setItem) {
-  return function(key, data, callback, fallback, completeback) {
-    setItem(key, data)
-    callback();
-    complete();
-  }
-}
-storage.useAdapter({
-  getItem: getItemAsync(localStorage.getItem),
-  setItem: setItemAsync(localStorage.setItem),
-  getItemSync: localStorage.getItem,
-  setItemSync: localStorage.setItem
 });
 ```
+
 官方在 Web 容器内已经支持的缓存器有：`localStorage`, `sessionStorage`；
 在小程序容器下已经支持：微信小程序、阿里小程序、头条小程序；
 在 ReactNative 的容器下支持：`AsyncStorage`
 
 ### 兼容缓存器其他没有使用到的 api
+
 以 React-Native 为例，`AsyncStorage` 支持如下写法：
 
 ```javascript
@@ -144,7 +183,7 @@ const storage = new Storage({
   keys: ['userInfo']
 });
 
-storage.getAllKeys((err, keys) => {
+storage.getAllKeys(keys => {
   if (!err) {
     console.log(keys);
   }
