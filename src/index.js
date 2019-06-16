@@ -1,3 +1,5 @@
+import mpMap from './mpMap';
+
 export default class Storage {
   _nativeMethods = {};
 
@@ -30,65 +32,9 @@ export default class Storage {
         (typeof tt !== 'undefined' && target === tt)
       ) {
         allMethods.map(methodName => {
-          const adapterMethod = getAdapterMethod(adapters[methodName], target);
-          if (adapterMethod) {
-            this._nativeMethods[methodName] = adapterMethod;
-          } else {
-            switch (methodName) {
-              case 'getItem':
-                this._nativeMethods[methodName] = target.getStorage.bind(
-                  target
-                );
-                break;
-              case 'getItemSync':
-                this._nativeMethods[methodName] = target.getStorageSync.bind(
-                  target
-                );
-                break;
-              case 'setItem':
-                this._nativeMethods[methodName] = target.setStorage.bind(
-                  target
-                );
-                break;
-              case 'setItemSync':
-                this._nativeMethods[methodName] = target.setStorageSync.bind(
-                  target
-                );
-                break;
-              case 'removeItem':
-                this._nativeMethods[methodName] = target.removeStorage.bind(
-                  target
-                );
-                break;
-              case 'removeItemSync':
-                this._nativeMethods[methodName] = target.removeStorageSync.bind(
-                  target
-                );
-                break;
-              case 'clear':
-                this._nativeMethods[methodName] = target.clearStorage.bind(
-                  target
-                );
-                break;
-              case 'clearSync':
-                this._nativeMethods[methodName] = target.clearStorageSync.bind(
-                  target
-                );
-                break;
-              case 'getInfo':
-                this._nativeMethods[methodName] = target.getStorageInfo.bind(
-                  target
-                );
-                break;
-              case 'getInfoSync':
-                this._nativeMethods[
-                  methodName
-                ] = target.getStorageInfoSync.bind(target);
-                break;
-              default:
-                break;
-            }
-          }
+          this._nativeMethods[methodName] =
+            getAdapterMethod(adapters[methodName], target) ||
+            target[mpMap[methodName]].bind(target);
         });
       } else {
         // w3c standard storage
