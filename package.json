@@ -29,6 +29,7 @@
     "prettier-eslint-cli": "^4.7.1",
     "rollup": "^1.1.2",
     "rollup-plugin-babel": "^4.3.2",
+    "rollup-plugin-commonjs": "^10.0.0",
     "rollup-plugin-node-resolve": "^4.2.4",
     "rollup-plugin-uglify": "^6.0.2"
   },

@@ -29,38 +29,67 @@ export default class Storage {
         (typeof qq !== 'undefined' && target === qq) ||
         (typeof tt !== 'undefined' && target === tt)
       ) {
-        this._nativeMethods = {
-          getItem:
-            getAdapterMethod(adapters.getItem, target) ||
-            target.getStorage.bind(target),
-          getItemSync:
-            getAdapterMethod(adapters.getItemSync, target) ||
-            target.getStorageSync.bind(target),
-          setItem:
-            getAdapterMethod(adapters.setItem, target) ||
-            target.setStorage.bind(target),
-          setItemSync:
-            getAdapterMethod(adapters.setItemSync, target) ||
-            target.setStorageSync.bind(target),
-          removeItem:
-            getAdapterMethod(adapters.removeItem, target) ||
-            target.removeStorage.bind(target),
-          removeItemSync:
-            getAdapterMethod(adapters.removeItemSync, target) ||
-            target.removeStorageSync.bind(target),
-          clear:
-            getAdapterMethod(adapters.clear, target) ||
-            target.clearStorage.bind(target),
-          clearItem:
-            getAdapterMethod(adapters.clearItem, target) ||
-            target.clearStorageSync.bind(target),
-          getInfo:
-            getAdapterMethod(adapters.getInfo, target) ||
-            target.getStorageInfo.bind(target),
-          getInfoSync:
-            getAdapterMethod(adapters.getInfoSync, target) ||
-            target.getStorageInfoSync.bind(target)
-        };
+        allMethods.map(methodName => {
+          const adapterMethod = getAdapterMethod(adapters[methodName], target);
+          if (adapterMethod) {
+            this._nativeMethods[methodName] = adapterMethod;
+          } else {
+            switch (methodName) {
+              case 'getItem':
+                this._nativeMethods[methodName] = target.getStorage.bind(
+                  target
+                );
+                break;
+              case 'getItemSync':
+                this._nativeMethods[methodName] = target.getStorageSync.bind(
+                  target
+                );
+                break;
+              case 'setItem':
+                this._nativeMethods[methodName] = target.setStorage.bind(
+                  target
+                );
+                break;
+              case 'setItemSync':
+                this._nativeMethods[methodName] = target.setStorageSync.bind(
+                  target
+                );
+                break;
+              case 'removeItem':
+                this._nativeMethods[methodName] = target.removeStorage.bind(
+                  target
+                );
+                break;
+              case 'removeItemSync':
+                this._nativeMethods[methodName] = target.removeStorageSync.bind(
+                  target
+                );
+                break;
+              case 'clear':
+                this._nativeMethods[methodName] = target.clearStorage.bind(
+                  target
+                );
+                break;
+              case 'clearSync':
+                this._nativeMethods[methodName] = target.clearStorageSync.bind(
+                  target
+                );
+                break;
+              case 'getInfo':
+                this._nativeMethods[methodName] = target.getStorageInfo.bind(
+                  target
+                );
+                break;
+              case 'getInfoSync':
+                this._nativeMethods[
+                  methodName
+                ] = target.getStorageInfoSync.bind(target);
+                break;
+              default:
+                break;
+            }
+          }
+        });
       } else {
         // w3c standard storage
         const methodsName = ['getItem', 'setItem', 'removeItem', 'clear'];
@@ -141,8 +170,7 @@ export default class Storage {
       if (this._runTimeCaches[key]) {
         resolve(this._runTimeCaches[key].value);
       } else {
-        // Compatible with not registering key
-        this._nativeMethods.getItem(key, resolve, reject);
+        reject("The key isn't regisitered in keys!");
       }
     });
   }
@@ -150,21 +178,7 @@ export default class Storage {
     if (this._runTimeCaches[key]) {
       return this._runTimeCaches[key].value;
     } else {
-      const value = this._nativeMethods.getItemSync(key);
-      if (value) {
-        this._nativeMethods.setItemSync(
-          key,
-          JSON.stringify({
-            value
-          })
-        );
-        this._runTimeCaches[key] = {
-          value
-        };
-        return value;
-      } else {
-        return null;
-      }
+      throw new Error("The key isn't regisitered in keys!");
     }
   }
   setItem(key, value) {
